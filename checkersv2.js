@@ -441,18 +441,19 @@ function checkAllJumps() {
         return Object.getOwnPropertyNames(predeterChildren)[children].slice(4, 6)
     } */
 
-    function getSelector(selector) { // cell4 A = 6  or cell12 = 5 or cell10 A = 7 or cell3 = 4
-        var unslicedSelector = Object.getOwnPropertyNames(keepJumps)[selector]
-        if (unslicedSelector.length === 4 || unslicedSelector.length === 6) var slicedSelector = unslicedSelector.slice(4)
-        if (unslicedSelector.length === 5 || unslicedSelector.length === 7) var slicedSelector = unslicedSelector.slice(4, 5)
+    function getSelector(selector) { // cell4 A = 7  or cell12 = 6 or cell10 A = 8 or cell3 = 5
+        var unslicedSelector = Object.keys(keepJumps)[selector]
+        if (unslicedSelector.length === 5 || unslicedSelector.length === 6) var slicedSelector = unslicedSelector.slice(4)
+        if (unslicedSelector.length === 7) var slicedSelector = unslicedSelector.slice(4, 5)
+        if (unslicedSelector.length === 8) var slicedSelector = unslicedSelector.slice(4, 6)
         return slicedSelector
     }
 
     function getLongestArray(selectorOrChildren) {
-        for (i = 1; i <= Object.getOwnPropertyNames(keepJumps).length - 1; i++) {
-            var length = Object.getOwnPropertyNames(keepJumps).length 
-            var getProps = Object.getOwnPropertyNames(keepJumps)[i]
-            var getProps2 = Object.getOwnPropertyNames(predeterChildren)[i]
+        for (i = 0; i <= Object.keys(keepJumps).length - 1; i++) {
+            var length = Object.keys(keepJumps).length 
+            var getProps = Object.keys(keepJumps)[i]
+            var getProps2 = Object.keys(predeterChildren)[i]
             var compareArrayLength = keepJumps[getProps].length
     
             if (getArray) {
@@ -566,10 +567,15 @@ function checkAllJumps() {
                     checkChainJump(undefined, keepJumps['chip' + num][ind], num)
                     if (twoNumIsTrue(tempJumpArr)) {
                         var firstLinearJump = keepJumps['chip' + num][0]
+                        var secondLinearJump = keepJumps['chip' + num][1]
                         var firstJumpA = tempJumpArr.shift()
                         var secondJumpB = tempJumpArr.shift()
                         keepJumps['chip' + num + ' A'] = [firstLinearJump]
                         keepJumps['chip' + num + ' B'] = [firstLinearJump]
+                        if (secondLinearJump) {
+                            keepJumps['chip' + num + ' A'].push(secondLinearJump)
+                            keepJumps['chip' + num + ' B'].push(secondLinearJump)
+                        }
                         keepJumps['chip' + num + ' A'].push(firstJumpA)
                         keepJumps['chip' + num + ' B'].push(secondJumpB)
                         delete keepJumps['chip' + num]
