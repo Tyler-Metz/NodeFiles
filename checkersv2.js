@@ -24,6 +24,8 @@ var checkerboardFlags = {
     predeterminedChildrenToRemove: [],
     childrenToKeep: [],
     playerChildrenToKeep: [],
+    playerChainJump: null,
+    playerPreviousChainJump: [],
     checkAllJumps: false,
     checkChainJumps: false,
     predeterminedChainJumps: false,
@@ -142,16 +144,44 @@ function logAttributeDataValue() {
     }
 }
 
-// Function for updating gamestate array values
+// Function for updating gamestate array values + new king system (12/28/2020)
 function updateGamestateValue(node, color) {
-    var slicedNode = node.id.slice(4)
+    var slicedNode = +node.id.slice(4)
+    var redKingSpots = [0, 1, 2, 3]
+    var blackKingSpots = [28, 29, 30, 31]
 
     if (color == 'red') {
         checkerboardFlags.slots[slicedNode] = 'red'
         console.log('Changed cell', slicedNode, ' to ', checkerboardFlags.slots[slicedNode]);
+        if (redKingSpots.includes(slicedNode) && !node.firstChild.firstChild) {
+            var kingDiv = document.createElement('Div');
+            node.firstChild.appendChild(kingDiv);
+            kingDiv.style.background = 'linear-gradient(45deg, rgb(235, 0, 0), rgb(90, 0, 0))';
+            kingDiv.style.width = '8rem';
+            kingDiv.style.height = '8rem';
+            kingDiv.style.borderRadius = '50%';
+            kingDiv.style.position = 'relative';
+            kingDiv.style.border = '0.3rem solid silver';
+            kingDiv.style.bottom = '0.9rem'
+            kingDiv.style.right = '0.3rem';
+            kingDiv.style.boxShadow = '0.6rem 0.6rem 0.6rem rgb(0, 0, 0)';
+        }
     } else if (color == 'black') {
         checkerboardFlags.slots[slicedNode] = 'black'
         console.log('Changed cell', slicedNode, ' to ', checkerboardFlags.slots[slicedNode]);
+        if (blackKingSpots.includes(slicedNode) && !node.firstChild.firstChild) {
+            var kingDiv = document.createElement('Div');
+            node.firstChild.appendChild(kingDiv);
+            kingDiv.style.background = 'linear-gradient(45deg, rgb(20, 20, 20), rgb(90, 90, 90))';
+            kingDiv.style.width = '8rem';
+            kingDiv.style.height = '8rem';
+            kingDiv.style.borderRadius = '50%';
+            kingDiv.style.position = 'relative';
+            kingDiv.style.border = '0.3rem solid silver';
+            kingDiv.style.bottom = '0.9rem'
+            kingDiv.style.right = '0.3rem';
+            kingDiv.style.boxShadow = '0.6rem 0.6rem 0.6rem rgb(0, 0, 0)';
+        }
     } else {
         checkerboardFlags.slots[slicedNode] = false;
         console.log('Changed cell', slicedNode, ' to ', checkerboardFlags.slots[slicedNode])
@@ -160,27 +190,39 @@ function updateGamestateValue(node, color) {
 
 // Child Check
 function childCheck(child, element) {
-    if(child && checkerboardFlags.clickCounter == 0){
-    if (child.getAttribute("class") == "red") {
-        if (checkerboardFlags.colorFlag !== 'red') {
-            console.log('You are not red silly! Click a black chip you want to move!')
-            checkerboardFlags.misClick = false;
-        } else {
-            checkerboardFlags.misClick = true; console.log('Correct! You are red!')
-            checkBoolean(element)
-        }
+    if (child && checkerboardFlags.clickCounter == 0 || child && checkerboardFlags.clickCounter == 1) {
+        if (child.getAttribute("class") == "red") {
+            if (checkerboardFlags.colorFlag !== 'red') {
+                console.log('You are not red silly! Click a black chip you want to move!')
+                if (!checkerboardFlags.clickCounter === 1) checkerboardFlags.misClick = false;
+            } else {
+                checkerboardFlags.misClick = true; console.log('Correct! You are red!')
+                checkerboardFlags.clickCounter = 0;
+                if (checkerboardFlags.firstClickDiv) checkerboardFlags.firstClickDiv.style.boxShadow = '';
+                checkBoolean(element)
+                child.style.boxShadow = '0rem 0rem 3rem 1rem rgb(255, 255, 0)';
+            }
 
-    }
-    if (child.getAttribute("class") == "black") {
-        if (checkerboardFlags.colorFlag !== 'black') {
-            console.log('You are not black silly! Click a red chip you want to move!')
-            checkerboardFlags.misClick = false;
-        } else {
-            checkerboardFlags.misClick = true; console.log('Correct! You are black!')
-            checkBoolean(element)
         }
-    }
-  } else {console.log('No children present or already clicked a chip'); checkBoolean(element)}
+        if (child.getAttribute("class") == "black") {
+            if (checkerboardFlags.colorFlag !== 'black') {
+                console.log('You are not black silly! Click a red chip you want to move!')
+                if (!checkerboardFlags.clickCounter === 1) checkerboardFlags.misClick = false;
+            } else {
+                checkerboardFlags.misClick = true; console.log('Correct! You are black!')
+                checkerboardFlags.clickCounter = 0;
+                if (checkerboardFlags.firstClickDiv) checkerboardFlags.firstClickDiv.style.boxShadow = '';
+                checkBoolean(element)
+                child.style.boxShadow = '0rem 0rem 3rem 1rem rgb(255, 255, 0)';
+            }
+        }
+    } else if (checkerboardFlags.clickCounter == 2 && checkerboardFlags.tempJumpArr.includes(+element.id.slice(4))) {
+
+        console.log('its a match... congratz')
+        /* checkerboardFlags.misClick = true; */
+        checkMovement(element)
+
+    } else { console.log('No children present or already clicked a chip'); checkBoolean(element) }
 } 
 
 // Check if cell has data-boolean attribute
@@ -234,10 +276,13 @@ function checkMovement(element, aitd1check, airow1check) {
         var playerJumpVal = secondClickTd - firstClickTd
         playerJumpVal = +playerJumpVal
 
+        // Sets chain jumping values to go off of global flag and second clicks, since you won't have to click your first chip again when chain jumping.
+        if (checkerboardFlags.playerChainJump) playerJumpVal = checkerboardFlags.playerPreviousChainJump - secondClickTd
+
         var checkPlayerJump = playerJumps.includes(playerJumpVal)
 
-        console.log('Player Color: ', checkerboardFlags.firstClickTd.firstChild.className, 'Player First Click TD ID: ', firstClickTd, 'Player First Click Row: ', firstClickRow, 
-        'checkPlayerJump: ', checkPlayerJump);
+        /* console.log('Player Color: ', checkerboardFlags.firstClickTd.firstChild.className, 'Player First Click TD ID: ', firstClickTd, 'Player First Click Row: ', firstClickRow, 
+        'checkPlayerJump: ', checkPlayerJump); */
 
     }
 
@@ -258,12 +303,12 @@ function checkMovement(element, aitd1check, airow1check) {
 
     // Checks for Player Jumps during Movement after Row Check
     if (playerTurn && checkPlayerJump) {
-        
-        if (checkerboardFlags.colorFlag === 'black'){
+
+        if (checkerboardFlags.colorFlag === 'black') {
 
             playerJumps.splice(0, 2)
 
-            var playerJumpsInd = playerJumps.findIndex(function(ele){
+            var playerJumpsInd = playerJumps.findIndex(function (ele) {
                 return playerJumpVal === ele
             })
 
@@ -272,7 +317,7 @@ function checkMovement(element, aitd1check, airow1check) {
                 var aiTdVal = secondClickTd + evenNums[playerJumpsInd]
                 console.log(evenNums, playerJumps)
             }
-            
+
             if (rowCheck === 'odd') {
                 oddNums.splice(2)
                 var aiTdVal = secondClickTd + oddNums[playerJumpsInd]
@@ -282,18 +327,18 @@ function checkMovement(element, aitd1check, airow1check) {
             console.log('Player Jump Value: ', playerJumpVal)
             console.log('Player Jump Ind: ', playerJumpsInd)
             console.log('Ai to Remove: ', aiTdVal)
-            
+
             var aiTdToRemove = document.getElementById('cell' + aiTdVal)
-            
+
             if (aiTdToRemove) tdCheck = true;
             else tdCheck = false;
         }
 
-        else if (checkerboardFlags.colorFlag === 'red'){
+        else if (checkerboardFlags.colorFlag === 'red') {
 
             playerJumps.splice(2)
 
-            var playerJumpsInd = playerJumps.findIndex(function(ele){
+            var playerJumpsInd = playerJumps.findIndex(function (ele) {
                 return playerJumpVal === ele
             })
 
@@ -302,7 +347,7 @@ function checkMovement(element, aitd1check, airow1check) {
                 var aiTdVal = secondClickTd + evenNums[playerJumpsInd]
                 console.log(evenNums, playerJumps)
             }
-            
+
             if (rowCheck === 'odd') {
                 oddNums.splice(0, 2)
                 var aiTdVal = secondClickTd + oddNums[playerJumpsInd]
@@ -314,30 +359,50 @@ function checkMovement(element, aitd1check, airow1check) {
             console.log('Ai to Remove: ', aiTdVal)
 
             var aiTdToRemove = document.getElementById('cell' + aiTdVal)
-            
+
             if (aiTdToRemove) tdCheck = true;
             else tdCheck = false;
         }
-        
+
         if (checkerboardFlags.slots[aiTdVal] === checkerboardFlags.colorAiFlag) {
 
             var divNum = aiTdToRemove.firstChild.id.slice(3)
             divNum = +divNum
 
             if (checkerboardFlags.colorAiFlag == 'black') {
-            checkerboardFlags.childrenToKeep.push(divNum)
+                checkerboardFlags.childrenToKeep.push(divNum)
             }
-    
+
             else if (checkerboardFlags.colorAiFlag == 'red') {
-            /* var toMatchSelector = divNum - 20 */
-            checkerboardFlags.childrenToKeep.push(divNum)
+                /* var toMatchSelector = divNum - 20 */
+                checkerboardFlags.childrenToKeep.push(divNum)
             }
 
             /* tdCheck = true; */
             var jumpCheck = true;
 
         } else tdCheck = false;
+    
+    // Checks for player chain jumping - returns value into tempJumpArr if player can jump some more
+    checkChainJump(undefined, secondClickTd, undefined, undefined)
+    if (checkerboardFlags.tempJumpArr.length !== 0) checkerboardFlags.playerChainJump = true, checkerboardFlags.playerPreviousChainJump = secondClickTd;
 
+    // Restricts player movement depending on the color when jumpCheck is false    
+    } else if (playerTurn && !checkPlayerJump) {
+        if (checkerboardFlags.colorFlag === 'black') {
+            evenNums.splice(0, 2)
+            oddNums.splice(0, 2)
+            sidesEvenAndOdd.shift()
+            oddCorner.shift()
+            oddBottom.splice(0)
+        }
+        else {
+            evenNums.splice(2)
+            oddNums.splice(2)
+            sidesEvenAndOdd.pop()
+            evenCorner.shift()
+            evenTop.splice(0)
+        }
     }
 
 
@@ -410,11 +475,21 @@ function placeChip(element, tdCheck, aiTdToRemove, jumpCheck) {
         element.appendChild(checkerboardFlags.firstClickDiv)
         element.setAttribute("data-boolean", "true")
         updateGamestateValue(element, checkerboardFlags.colorFlag);
-        checkerboardFlags.clickCounter = 2;
-        checkerboardFlags.playerTurn = false;
-        checkerboardFlags.checkAllJumps = false;
-        console.log('Ai turn is up!')
-        checkAllJumps();
+        if (!checkerboardFlags.playerChainJump) {
+            checkerboardFlags.clickCounter = 2;
+            checkerboardFlags.playerTurn = false;
+            checkerboardFlags.checkAllJumps = false;
+            checkerboardFlags.firstClickDiv.style.boxShadow = '0.2rem 0.2rem 0.2rem #000'
+            console.log('Ai turn is up!')
+            checkAllJumps();
+        }
+        else if (checkerboardFlags.playerChainJump) {
+            checkerboardFlags.clickCounter = 2;
+            checkerboardFlags.checkAllJumps = false;
+            /* checkerboardFlags.firstClickDiv.style.boxShadow = '0.2rem 0.2rem 0.2rem #000' */
+            console.log('Player can still execute another jump!')
+        }
+        
         
     } else console.log(`Spot has a chip on it already! Select an empty spot. OR movement requirements aren't satisfied`)
 }
@@ -687,6 +762,20 @@ function checkChainJump(chipselectorid, cellid, selector, route) {
     checkerboardFlags.checkChainJumps = true;
     checkerboardFlags.tempJumpArr.length = 0;
     aiPick(chipselectorid, cellid, selector, route)
+
+    // player chain jumping rule revert
+
+    if (checkerboardFlags.playerTurn) {
+
+        checkerboardFlags.childrenToRemove.length = 0
+
+        if (checkerboardFlags.playerTurn && checkerboardFlags.colorFlag === 'black') checkerboardFlags.colorFlag = 'red'
+        else if (checkerboardFlags.playerTurn && checkerboardFlags.colorFlag === 'red') checkerboardFlags.colorFlag = 'black'
+
+        if (checkerboardFlags.playerTurn && checkerboardFlags.colorAiFlag === 'black') checkerboardFlags.colorAiFlag = 'red'
+        else if (checkerboardFlags.playerTurn && checkerboardFlags.colorAiFlag === 'red') checkerboardFlags.colorAiFlag = 'black'
+
+    }
     checkerboardFlags.checkChainJumps = false;
 }
 
@@ -711,7 +800,17 @@ function aiPick(num, cellid, selector, route) {
     var topAndBottomCells = [0, 1, 2, 29, 30, 31]
     console.log (checkAllJumps, checkChainJumps);
     
+    // for console log (kek)
     if (checkerboardFlags.colorAiFlag === 'red') var matchRedSelector = num + 20
+
+
+    // player chain jumping rule
+    if (checkerboardFlags.playerTurn && checkerboardFlags.colorFlag === 'red') checkerboardFlags.colorFlag = 'black'
+    else if (checkerboardFlags.playerTurn && checkerboardFlags.colorFlag === 'black') checkerboardFlags.colorFlag = 'red'
+
+    if (checkerboardFlags.playerTurn && checkerboardFlags.colorAiFlag === 'red') checkerboardFlags.colorAiFlag = 'black'
+    else if (checkerboardFlags.playerTurn && checkerboardFlags.colorAiFlag === 'black') checkerboardFlags.colorAiFlag = 'red'
+
 
     if (checkAllJumps && !checkChainJumps) {
         var numArr = []
@@ -957,7 +1056,6 @@ function aiPick(num, cellid, selector, route) {
                 })
                 if (!predeter) return (aiMove(allBlack[num], num))
             }
-            
         } 
         // EVEN ROW FOR AI ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     } if (evenRow.includes(slicedBlackParent) && checkerboardFlags.colorFlag == 'red' || evenRow.includes(slicedRedParent) && checkerboardFlags.colorFlag == 'black') {
