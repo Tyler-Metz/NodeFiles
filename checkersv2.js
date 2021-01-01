@@ -467,7 +467,7 @@ function placeChip(element, tdCheck, aiTdToRemove, jumpCheck) {
         console.log('Trying to remove AI CHIP: ', aiTdToRemove.firstElementChild)
         aiTdToRemove.removeChild(aiTdToRemove.firstElementChild) 
     }
-
+ 
     if (tdCheck && element.getAttribute("data-boolean") == "false") {
         console.log('Trying to move chip to this empty spot which returns a false boolean')
         checkerboardFlags.firstClickTd.setAttribute("data-boolean", "false")
