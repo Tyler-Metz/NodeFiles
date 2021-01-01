@@ -277,7 +277,7 @@ function checkMovement(element, aitd1check, airow1check) {
         playerJumpVal = +playerJumpVal
 
         // Sets chain jumping values to go off of global flag and second clicks, since you won't have to click your first chip again when chain jumping.
-        if (checkerboardFlags.playerChainJump) playerJumpVal = checkerboardFlags.playerPreviousChainJump - secondClickTd
+        if (checkerboardFlags.playerChainJump) playerJumpVal =  secondClickTd - checkerboardFlags.playerPreviousChainJump
 
         var checkPlayerJump = playerJumps.includes(playerJumpVal)
 
@@ -379,15 +379,31 @@ function checkMovement(element, aitd1check, airow1check) {
             }
 
             /* tdCheck = true; */
-            var jumpCheck = true;
+            var afterJumpCheck = true;
 
         } else tdCheck = false;
     
-    // Checks for player chain jumping - returns value into tempJumpArr if player can jump some more
-    checkChainJump(undefined, secondClickTd, undefined, undefined)
-    if (checkerboardFlags.tempJumpArr.length !== 0) checkerboardFlags.playerChainJump = true, checkerboardFlags.playerPreviousChainJump = secondClickTd;
+    // Checks for player chain jumping - returns value into tempJumpArr if player can jump some more, also corrects boolean and gamestate values
+    if(afterJumpCheck) checkChainJump(undefined, secondClickTd, undefined, undefined)
 
-    // Restricts player movement depending on the color when jumpCheck is false    
+    function numIsInArray(arr){
+        return arr.some(function(val){
+            return typeof val === 'number'
+        })
+    }
+
+    if (checkerboardFlags.playerPreviousChainJump.length !== 0) {
+        var previousChainJump = document.getElementById('cell' + checkerboardFlags.playerPreviousChainJump)
+        previousChainJump.setAttribute('data-boolean', 'false');
+        updateGamestateValue(previousChainJump, false)
+    }
+    if (checkerboardFlags.tempJumpArr.length !== 0 && numIsInArray(checkerboardFlags.tempJumpArr)){
+        checkerboardFlags.playerChainJump = true 
+        checkerboardFlags.playerPreviousChainJump = secondClickTd;
+    } 
+    else checkerboardFlags.playerChainJump = false, checkerboardFlags.playerPreviousChainJump.length = 0;
+
+    // Restricts player movement depending on the color when checkPlayerJump is false    
     } else if (playerTurn && !checkPlayerJump) {
         if (checkerboardFlags.colorFlag === 'black') {
             evenNums.splice(0, 2)
@@ -453,15 +469,15 @@ function checkMovement(element, aitd1check, airow1check) {
     } else { console.log('forEach not working properly') }
 
 
-   if(playerTurn) placeChip(element, tdCheck, aiTdToRemove, jumpCheck)
+   if(playerTurn) placeChip(element, tdCheck, aiTdToRemove, afterJumpCheck)
    if(!playerTurn && tdCheck) {console.log('MOVEMENT CHECK CONFIRMED'), checkerboardFlags.aiTurn = true;}
    else return false;
 }
 // Function for appendingChildren
-function placeChip(element, tdCheck, aiTdToRemove, jumpCheck) {
+function placeChip(element, tdCheck, aiTdToRemove, afterJumpCheck) {
     console.log('aiTdToRemove: ', aiTdToRemove)
 
-    if (jumpCheck) {
+    if (afterJumpCheck) {
         updateGamestateValue(aiTdToRemove, false)
         aiTdToRemove.setAttribute("data-boolean", "false")
         console.log('Trying to remove AI CHIP: ', aiTdToRemove.firstElementChild)
