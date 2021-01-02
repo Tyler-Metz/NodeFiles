@@ -188,7 +188,7 @@ function updateGamestateValue(node, color) {
     }
 }
 
-// Child Check
+// Child Check 
 function childCheck(child, element) {
     if (child && checkerboardFlags.clickCounter == 0 || child && checkerboardFlags.clickCounter == 1) {
         if (child.getAttribute("class") == "red") {
