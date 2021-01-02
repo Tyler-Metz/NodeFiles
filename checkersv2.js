@@ -229,7 +229,7 @@ function childCheck(child, element) {
 function checkBoolean(element) {
     var misClick = checkerboardFlags.misClick
     if (misClick && checkerboardFlags.clickCounter == 1) checkMovement(element)
-    else if (misClick && checkerboardFlags.clickCounter == 0 && element.getAttribute("data-boolean") == "true") {
+    else if (misClick && checkerboardFlags.clickCounter == 0 && element.getAttribute("data-boolean") === "true") {
         console.log('Chip is valid')
         checkerboardFlags.clickCounter = 1;
         checkerboardFlags.firstClickDiv = element.firstChild
@@ -392,9 +392,9 @@ function checkMovement(element, aitd1check, airow1check) {
         })
     }
 
-    if (checkerboardFlags.playerPreviousChainJump.length !== 0) {
+    if (checkerboardFlags.playerPreviousChainJump.length !== 0 && afterJumpCheck === true) {
         var previousChainJump = document.getElementById('cell' + checkerboardFlags.playerPreviousChainJump)
-        previousChainJump.setAttribute('data-boolean', 'false');
+        previousChainJump.setAttribute('data-boolean', "false");
         updateGamestateValue(previousChainJump, false)
     }
     if (checkerboardFlags.tempJumpArr.length !== 0 && numIsInArray(checkerboardFlags.tempJumpArr)){
@@ -1255,10 +1255,10 @@ function aiMove(pick, bestJumps, childrenToRemove) {
 
         console.log('updateAi is executing')
         updateGamestateValue(pick.parentElement, false)
-        pick.parentElement.setAttribute("data-boolean", false)
+        pick.parentElement.setAttribute("data-boolean", "false")
         allContainers[ind].appendChild(pick)
         updateGamestateValue(allContainers[ind], checkerboardFlags.colorAiFlag)
-        allContainers[ind].setAttribute("data-boolean", true)
+        allContainers[ind].setAttribute("data-boolean", "true")
         console.log('Player turn is up!')
         console.log('JUMP CHIP ARRAY ', checkerboardFlags.tempJumpArr)
     }
@@ -1274,7 +1274,7 @@ for (var i = 0; i < allContainersByClass.length; i++) {
 
 function removeChildren(cellNum) {
     var td = document.getElementById('cell' + cellNum)
-    td.setAttribute('data-boolean', false)
+    td.setAttribute('data-boolean', "false")
     updateGamestateValue(td, false)
 
     
