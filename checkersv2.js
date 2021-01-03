@@ -25,7 +25,7 @@ var checkerboardFlags = {
     childrenToKeep: [],
     playerChildrenToKeep: [],
     playerChainJump: null,
-    playerPreviousChainJump: [],
+    playerPreviousChainJump: null,
     checkAllJumps: false,
     checkChainJumps: false,
     predeterminedChainJumps: false,
@@ -252,7 +252,7 @@ function checkMovement(element, aitd1check, airow1check) {
     var evenCorner = [4]
     var evenTop = [4, 5]
     var oddBottom = [-5, -4]
-    var playerJumps = [-9, -7, 9, 7]
+    var playerJumps = [9, 7, -9, -7]
 
     // ID Check for weird cells
     var sideCells = [4, 11, 12, 19, 20, 27]
@@ -306,7 +306,9 @@ function checkMovement(element, aitd1check, airow1check) {
 
         if (checkerboardFlags.colorFlag === 'black') {
 
-            playerJumps.splice(0, 2)
+            if (!checkerboardFlags.firstClickDiv.firstChild){
+                playerJumps.splice(0, 2)
+            }
 
             var playerJumpsInd = playerJumps.findIndex(function (ele) {
                 return playerJumpVal === ele
@@ -336,22 +338,45 @@ function checkMovement(element, aitd1check, airow1check) {
 
         else if (checkerboardFlags.colorFlag === 'red') {
 
-            playerJumps.splice(2)
+            if (!checkerboardFlags.firstClickDiv.firstChild){
+                playerJumps.splice(0, 2)
+                evenNums.splice(0, 2)
+                oddNums.splice(0, 2)
+            }
 
             var playerJumpsInd = playerJumps.findIndex(function (ele) {
                 return playerJumpVal === ele
             })
 
+            /* if (playerJumps.length === 4) {
+                if (playerJumpsInd === 2){
+                    playerJumpsInd = 0
+                }
+                else if (playerJumpsInd === 3){
+                    playerJumpsInd = 1
+                }
+            } */
+
             if (rowCheck === 'even') {
-                evenNums.splice(0, 2)
-                var aiTdVal = secondClickTd + evenNums[playerJumpsInd]
-                console.log(evenNums, playerJumps)
+                if (!checkerboardFlags.playerChainJump){
+                    var aiTdVal = secondClickTd + evenNums[playerJumpsInd]
+                    console.log(evenNums, playerJumps)
+                } else {
+                    var aiTdVal = secondClickTd + evenNums[playerJumpsInd]
+                    console.log(evenNums, playerJumps)
+                }
+                
             }
 
             if (rowCheck === 'odd') {
-                oddNums.splice(0, 2)
-                var aiTdVal = secondClickTd + oddNums[playerJumpsInd]
-                console.log(oddNums, playerJumps)
+                if (!checkerboardFlags.playerChainJump){
+                    var aiTdVal = secondClickTd + oddNums[playerJumpsInd]
+                    console.log(oddNums, playerJumps)
+                } else {
+                    var aiTdVal = secondClickTd + oddNums[playerJumpsInd]
+                    console.log(oddNums, playerJumps)
+                }
+                
             }
 
             console.log('Player Jump Value: ', playerJumpVal)
@@ -392,7 +417,8 @@ function checkMovement(element, aitd1check, airow1check) {
         })
     }
 
-    if (checkerboardFlags.playerPreviousChainJump.length !== 0 && afterJumpCheck === true) {
+    if (checkerboardFlags.playerPreviousChainJump !== null && afterJumpCheck === true) {
+        console.log('Changing Gamestate in checkmovement for player chaining: ', checkerboardFlags.playerPreviousChainJump)
         var previousChainJump = document.getElementById('cell' + checkerboardFlags.playerPreviousChainJump)
         previousChainJump.setAttribute('data-boolean', "false");
         updateGamestateValue(previousChainJump, false)
@@ -401,23 +427,25 @@ function checkMovement(element, aitd1check, airow1check) {
         checkerboardFlags.playerChainJump = true 
         checkerboardFlags.playerPreviousChainJump = secondClickTd;
     } 
-    else checkerboardFlags.playerChainJump = false, checkerboardFlags.playerPreviousChainJump.length = 0;
+    else checkerboardFlags.playerChainJump = false, checkerboardFlags.playerPreviousChainJump = null;
 
     // Restricts player movement depending on the color when checkPlayerJump is false    
     } else if (playerTurn && !checkPlayerJump) {
-        if (checkerboardFlags.colorFlag === 'black') {
-            evenNums.splice(0, 2)
-            oddNums.splice(0, 2)
-            sidesEvenAndOdd.shift()
-            oddCorner.shift()
-            oddBottom.splice(0)
-        }
-        else {
-            evenNums.splice(2)
-            oddNums.splice(2)
-            sidesEvenAndOdd.pop()
-            evenCorner.shift()
-            evenTop.splice(0)
+        if (!checkerboardFlags.firstClickDiv.firstChild) {
+            if (checkerboardFlags.colorFlag === 'black') {
+                evenNums.splice(0, 2)
+                oddNums.splice(0, 2)
+                sidesEvenAndOdd.shift()
+                oddCorner.shift()
+                oddBottom.splice(0)
+            }
+            else {
+                evenNums.splice(2)
+                oddNums.splice(2)
+                sidesEvenAndOdd.pop()
+                evenCorner.shift()
+                evenTop.splice(0)
+            }
         }
     }
 
@@ -508,6 +536,7 @@ function placeChip(element, tdCheck, aiTdToRemove, afterJumpCheck) {
         
         
     } else console.log(`Spot has a chip on it already! Select an empty spot. OR movement requirements aren't satisfied`)
+
 }
 
 // Function for checking all possible jumps
@@ -568,6 +597,7 @@ function checkAllJumps() {
     }
 
     for (num = 0; num <= 12; num++) {
+        /* debugger; */
         tempArr.length = 0;
         tempJumpArr.length = 0;
         childrenToRemove.length = 0;
@@ -774,7 +804,7 @@ function checkAllJumps() {
 
 // Function for chaining jumps together
 function checkChainJump(chipselectorid, cellid, selector, route) {
-    console.log('Checking for chain jumps!', chipselectorid, cellid, selector)
+    console.log('Checking for chain jumps!', 'num: ', chipselectorid, 'cellid: ', cellid, 'selector: ', selector)
     checkerboardFlags.checkChainJumps = true;
     checkerboardFlags.tempJumpArr.length = 0;
     aiPick(chipselectorid, cellid, selector, route)
@@ -855,13 +885,37 @@ function aiPick(num, cellid, selector, route) {
     
 
     console.log('What color is AI? ', checkerboardFlags.colorAiFlag, 'What piece is AI trying to move? ', matchRedSelector)
-    console.log ('(AI PICK) NUMBER PICKED = ', 'selector: ', num, 'or', 'static value: ', cellid)
+    console.log ('(AI PICK) NUMBER PICKED = ', 'num: ', num, 'or', 'cellid: ', cellid)
     
     if (checkerboardFlags.colorAiFlag == 'red') {
-        var removedEvenNums = evenNums.splice(2)
-        var removedOddNums = oddNums.splice(2)
-        var removedSides = sides.pop()
-        var removedTop = top.splice(0)
+        // king check (removes ability to go backwards if not kinged)
+        if (checkerboardFlags.playerTurn){
+            if (!checkerboardFlags.firstClickDiv.firstChild) {
+                evenNums.splice(2)
+                oddNums.splice(2)
+                sides.pop()
+                top.splice(0)
+            }
+        }
+        else if (!checkerboardFlags.playerTurn) {
+            if (num !== undefined) {
+                if (!allRed[num].firstChild) {
+                    evenNums.splice(2)
+                    oddNums.splice(2)
+                    sides.pop()
+                    top.splice(0)
+                }
+            }
+            if (selector !== undefined) {
+                if (!allRed[selector].firstChild) {
+                    evenNums.splice(2)
+                    oddNums.splice(2)
+                    sides.pop()
+                    top.splice(0)
+                }
+
+            }
+        }
         // row
         if (cellid == undefined) {
         var redParent = allRed[num].parentElement.parentElement
@@ -880,10 +934,34 @@ function aiPick(num, cellid, selector, route) {
     }
 
     if (checkerboardFlags.colorAiFlag == 'black') {
-        var removedEvenNums = evenNums.splice(0, 2)
-        var removedOddNums = oddNums.splice(0, 2)
-        var removedSides = sides.shift()
-        var removedBottom = bottom.splice(0)
+        // king check (removes ability to go backwards if not kinged)
+        if (checkerboardFlags.playerTurn) {
+            if (!checkerboardFlags.firstClickDiv.firstChild){
+                evenNums.splice(0, 2)
+                oddNums.splice(0, 2)
+                sides.shift()
+                bottom.splice(0)
+            }
+        }
+        if (!checkerboardFlags.playerTurn) {
+            if (num !== undefined) {
+                if (!allBlack[num].firstChild) {
+                    evenNums.splice(0, 2)
+                    oddNums.splice(0, 2)
+                    sides.shift()
+                    bottom.splice(0)
+                }
+            }
+            if (selector !== undefined) {
+                if (!allBlack[selector].firstChild) {
+                    evenNums.splice(0, 2)
+                    oddNums.splice(0, 2)
+                    sides.shift()
+                    bottom.splice(0)
+                }
+            }
+        }
+        //// cell id
         // row
         if (cellid == undefined) {
         var blackParent = allBlack[num].parentElement.parentElement
@@ -910,7 +988,7 @@ function aiPick(num, cellid, selector, route) {
         /* findIndex = +findIndex */
         var noJumpAllowed = sideCells.includes(findIndex) || topAndBottomCells.includes(findIndex) || cornerCells.includes(findIndex)
 
-        console.log('JUMP ARRAY ACTIVATING ', 'chip:', tdChip, 'value:', val, 'moving to spot: ', findIndex, 'noJumpAllowed: ', noJumpAllowed)
+        console.log('JUMP ARRAY ACTIVATING ', 'tdchip:', tdChip, 'value:', val, 'moving to spot: ', findIndex, 'noJumpAllowed: ', noJumpAllowed)
         console.log('red cell: ', slicedRedParent, 'black cell: ', blackParent, 'nojumpallowed: ', noJumpAllowed, 'coloraiflag: ', checkerboardFlags.colorAiFlag)
 
         if (predeterChildren['chip' + selector + ' A']) var splitA = predeterChildren['chip' + selector + ' A']
@@ -993,10 +1071,10 @@ function aiPick(num, cellid, selector, route) {
         // BLACK|RED ODD CORNER  BOTTOM LEFT
         if (cornerCells.includes(slicedBlackCell, 0) && checkerboardFlags.colorFlag == 'red' || cornerCells.includes(slicedRedCell, 0) && checkerboardFlags.colorFlag == 'black') {
             console.log('ODD CORNER MODULE RUNNING...')
-            if ( !predeter && checkerboardFlags.colorFlag == 'red' && !checkerboardFlags.slots[24]) { /* tempArr.push(24); */ return aiMove(allBlack[num], num) }
+            if ( !predeter && checkerboardFlags.colorFlag == 'red' && !checkerboardFlags.slots[24]) { /* tempArr.push(24); */ return aiMove(allBlack[num], num) } // IF KINGED, this needs to change. - Just enable it.
             else if ( !predeter && checkerboardFlags.colorFlag == 'black' && !checkerboardFlags.slots[24]) { tempArr.push(24); return aiMove(allRed[num], num) }
-            else if (!checkerboardFlags.keepJumps['chip' + selector] && checkerboardFlags.colorFlag == 'red' && checkerboardFlags.slots[24] == 'red') /* tempJumpArr.push(jumpChip(-4, slicedBlackCell)) */; if (!predeter) return aiMove(allBlack[num], num) 
-            else if (!checkerboardFlags.keepJumps['chip' + selector] && checkerboardFlags.colorFlag == 'black' && checkerboardFlags.slots[24] == 'black') tempJumpArr.push(jumpChip(-4, slicedRedCell)); if (!predeter) return aiMove(allRed[num], num) 
+            else if (!checkerboardFlags.keepJumps['chip' + selector] && checkerboardFlags.colorFlag == 'red' && checkerboardFlags.slots[24] == 'red') {/* tempJumpArr.push(jumpChip(-4, slicedBlackCell)) */ if (!predeter) return aiMove(allBlack[num], num) } // IF KINGED, this needs to change. - Just enable it.
+            else if (!checkerboardFlags.keepJumps['chip' + selector] && checkerboardFlags.colorFlag == 'black' && checkerboardFlags.slots[24] == 'black') { tempJumpArr.push(jumpChip(-4, slicedRedCell)); if (!predeter) return aiMove(allRed[num], num) }
             else if (checkerboardFlags.checkAllJumps && !predeter) {console.log('Reseting AI, corner is full.'); aiPick();}
             else {console.log('Returning False, corner is full.'); return false;}
         }
@@ -1080,9 +1158,9 @@ function aiPick(num, cellid, selector, route) {
         if (cornerCells.includes(slicedBlackCell, 1) && checkerboardFlags.colorFlag == 'red' || cornerCells.includes(slicedRedCell, 1) && checkerboardFlags.colorFlag == 'black') {
             console.log('EVEN CORNER MODULE RUNNING...')
             if ( !predeter && checkerboardFlags.colorFlag == 'red' && !checkerboardFlags.slots[7]) { tempArr.push(7); return aiMove(allBlack[num], num) }
-            else if ( !predeter && checkerboardFlags.colorFlag == 'black' && !checkerboardFlags.slots[7]) { /* tempArr.push(7); */ return aiMove(allRed[num], num) }
-            else if (!checkerboardFlags.keepJumps['chip' + selector] && checkerboardFlags.colorFlag == 'red' && checkerboardFlags.slots[7] == 'red') tempJumpArr.push(jumpChip(4, slicedBlackCell)); if (!predeter) return aiMove(allBlack[num], num);
-            else if (!checkerboardFlags.keepJumps['chip' + selector] && checkerboardFlags.colorFlag == 'black' && checkerboardFlags.slots[7] == 'black') /* tempJumpArr.push(jumpChip(4, slicedRedCell)) */; if (!predeter) return aiMove(allRed[num], num); 
+            else if ( !predeter && checkerboardFlags.colorFlag == 'black' && !checkerboardFlags.slots[7]) { /* tempArr.push(7); */ return aiMove(allRed[num], num) } // IF KINGED, this needs to change. - Just enable it.
+            else if (!checkerboardFlags.keepJumps['chip' + selector] && checkerboardFlags.colorFlag == 'red' && checkerboardFlags.slots[7] == 'red') { tempJumpArr.push(jumpChip(4, slicedBlackCell)); if (!predeter) return aiMove(allBlack[num], num);}
+            else if (!checkerboardFlags.keepJumps['chip' + selector] && checkerboardFlags.colorFlag == 'black' && checkerboardFlags.slots[7] == 'black') {/* tempJumpArr.push(jumpChip(4, slicedRedCell)) */; if (!predeter) return aiMove(allRed[num], num);} // IF KINGED, this needs to change. - Just enable it.
             else if (checkerboardFlags.checkAllJumps && !predeter) {console.log('Reseting AI, corner is full.'); aiPick();}
             else {console.log('Returning False, corner is full.'); return false;}
 
@@ -1242,6 +1320,7 @@ function aiMove(pick, bestJumps, childrenToRemove) {
                         checkerboardFlags.tempArr.length = 0;
                         checkerboardFlags.tempJumpArr.length = 0;
                         checkerboardFlags.clickCounter = 0;
+                        checkerboardFlags.playerPreviousChainJump = null;
                         return true;
 
                     }
@@ -1260,7 +1339,7 @@ function aiMove(pick, bestJumps, childrenToRemove) {
         updateGamestateValue(allContainers[ind], checkerboardFlags.colorAiFlag)
         allContainers[ind].setAttribute("data-boolean", "true")
         console.log('Player turn is up!')
-        console.log('JUMP CHIP ARRAY ', checkerboardFlags.tempJumpArr)
+        console.log('Clearing JUMP CHIP ARRAY ', checkerboardFlags.tempJumpArr)
     }
 }
 
