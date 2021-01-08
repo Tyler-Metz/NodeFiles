@@ -30,6 +30,7 @@ var checkerboardFlags = {
     checkChainJumps: false,
     predeterminedChainJumps: false,
     keepJumps: [],
+    keepKingChildren: [],
 }
 
 // Assign who goes first
@@ -307,7 +308,9 @@ function checkMovement(element, aitd1check, airow1check) {
         if (checkerboardFlags.colorFlag === 'black') {
 
             if (!checkerboardFlags.firstClickDiv.firstChild){
-                playerJumps.splice(0, 2)
+                playerJumps.splice(2)
+                evenNums.splice(2)
+                oddNums.splice(2)
             }
 
             var playerJumpsInd = playerJumps.findIndex(function (ele) {
@@ -315,13 +318,11 @@ function checkMovement(element, aitd1check, airow1check) {
             })
 
             if (rowCheck === 'even') {
-                evenNums.splice(2)
                 var aiTdVal = secondClickTd + evenNums[playerJumpsInd]
                 console.log(evenNums, playerJumps)
             }
 
             if (rowCheck === 'odd') {
-                oddNums.splice(2)
                 var aiTdVal = secondClickTd + oddNums[playerJumpsInd]
                 console.log(oddNums, playerJumps)
             }
@@ -348,35 +349,14 @@ function checkMovement(element, aitd1check, airow1check) {
                 return playerJumpVal === ele
             })
 
-            /* if (playerJumps.length === 4) {
-                if (playerJumpsInd === 2){
-                    playerJumpsInd = 0
-                }
-                else if (playerJumpsInd === 3){
-                    playerJumpsInd = 1
-                }
-            } */
-
             if (rowCheck === 'even') {
-                if (!checkerboardFlags.playerChainJump){
                     var aiTdVal = secondClickTd + evenNums[playerJumpsInd]
                     console.log(evenNums, playerJumps)
-                } else {
-                    var aiTdVal = secondClickTd + evenNums[playerJumpsInd]
-                    console.log(evenNums, playerJumps)
-                }
-                
             }
 
             if (rowCheck === 'odd') {
-                if (!checkerboardFlags.playerChainJump){
                     var aiTdVal = secondClickTd + oddNums[playerJumpsInd]
                     console.log(oddNums, playerJumps)
-                } else {
-                    var aiTdVal = secondClickTd + oddNums[playerJumpsInd]
-                    console.log(oddNums, playerJumps)
-                }
-                
             }
 
             console.log('Player Jump Value: ', playerJumpVal)
@@ -544,22 +524,37 @@ function checkAllJumps() {
     var tempArr = checkerboardFlags.tempArr
     var tempJumpArr = checkerboardFlags.tempJumpArr
     var keepJumps = checkerboardFlags.keepJumps
+    var keepKingChildren = checkerboardFlags.keepKingChildren
     var predeterChildren = checkerboardFlags.predeterminedChildrenToRemove
     var childrenToRemove = checkerboardFlags.childrenToRemove
+
+    function filterJumpArr(arr) {
+        return tempJumpArr = tempJumpArr.filter(function(ele, ind){
+            return typeof ele === 'number'
+        })  
+    }
 
     function numIsTrue(element) {
         return typeof element === 'number'
     }
 
     function twoNumIsTrue(array) {
-        return array.every(function (element) {
+        return array.every(function (element, ind) {
             return typeof element === 'number'
-        }) & array.length === 2
+        }) && array.length === 2
     }
 
-    /* function getChildren(children) {
-        return Object.getOwnPropertyNames(predeterChildren)[children].slice(4, 6)
-    } */
+    function threeNumIsTrue(array) {
+        return array.every(function (element, ind) {
+            return typeof element === 'number'
+        }) && array.length === 3
+    }
+
+    function fourNumIsTrue(array) {
+        return array.every(function (element, ind) {
+            return typeof element === 'number'
+        }) && array.length === 4
+    }
 
     function getSelector(selector) { // cell4 A = 7  or cell12 = 6 or cell10 A = 8 or cell3 = 5
         var unslicedSelector = Object.keys(keepJumps)[selector]
@@ -601,6 +596,7 @@ function checkAllJumps() {
         tempArr.length = 0;
         tempJumpArr.length = 0;
         childrenToRemove.length = 0;
+        checkerboardFlags.predeterminedChainJumps = false;
 
         if (checkerboardFlags.checkAllJumps) break;
         if (checkerboardFlags.colorAiFlag === 'red') var matchRedSelector = num + 20
@@ -609,7 +605,37 @@ function checkAllJumps() {
 
         if (num == 12) {
             checkerboardFlags.checkAllJumps = true;
+            //Re-sorting data if kings were involved (since it was programmed differently)
+            if (Object.keys(keepKingChildren).length > 1){
+                /* checkerboardFlags.predeterminedChainJumps = false; */
 
+                var child = Object.keys(keepKingChildren)[0]
+                var childA = Object.keys(keepKingChildren)[1]
+                var childB = Object.keys(keepKingChildren)[2]
+                
+                var jump = Object.keys(keepJumps)[0]
+                var jumpA = Object.keys(keepJumps)[1]
+                var jumpB = Object.keys(keepJumps)[2]
+                
+                predeterChildren[childA] = keepKingChildren[child].concat(keepKingChildren[childA])
+                predeterChildren[childB] = keepKingChildren[child].concat(keepKingChildren[childB])
+                keepJumps[jumpA] = keepJumps[jump].concat(keepJumps[jumpA])
+                keepJumps[jumpB] = keepJumps[jump].concat(keepJumps[jumpB])
+
+                delete keepKingChildren[child]
+                delete keepKingChildren[childA]
+                delete keepKingChildren[childB]
+            } else if (Object.keys(keepKingChildren).length === 1){
+                /* checkerboardFlags.predeterminedChainJumps = false; */
+                
+                var child = Object.keys(keepKingChildren)[0]
+                predeterChildren[child] = keepKingChildren[child]
+
+                delete keepKingChildren[child]
+
+            }
+
+            // Get longest array from predeterminedChildrenToRemove (chips to remove) & keepJumps (jumps to execute)
             if (Object.keys(keepJumps).length !== 0){
             var bestJumps = getLongestArray()
             var chipSelector = getLongestArray('selector')
@@ -625,7 +651,7 @@ function checkAllJumps() {
                 checkerboardFlags.keepJumps = [];
                 aiPick();
             }
-        } // do shit on this line after predetermining everything.
+        } // do shit after this line after predetermining everything. --------------------------------------------------------------------------
 
         else if (num !== 12 && !checkerboardFlags.childrenToKeep.includes(num) && !checkerboardFlags.childrenToKeep.includes(matchRedSelector) && aiPick(num)) {
             console.log('num: ', num, 'is true.')
@@ -633,165 +659,260 @@ function checkAllJumps() {
             console.log(tempJumpArr.length)
             console.log(checkerboardFlags.childrenToRemove)
 
+            tempJumpArr = checkerboardFlags.tempJumpArr
             checkerboardFlags.predeterminedChainJumps = true;
 
-            if (twoNumIsTrue(tempJumpArr) && !keepJumps['chip' + num]) {
+            // If not kinged, continue
+            if (checkerboardFlags.colorAiFlag === 'red' && !allRed[num].firstChild ||
+                checkerboardFlags.colorAiFlag === 'black' && !allBlack[num].firstChild) {
 
-                tempJumpArr.forEach(function (element, ind) {
+                // Split
+                if (twoNumIsTrue(tempJumpArr) && !keepJumps['chip' + num]) {
 
-                    if (ind === 0) {var route = ' A'}
-                    if (ind === 1) {var route = ' B'}
-
-                    keepJumps['chip' + num + route] = [element]
-                    predeterChildren['chip' + num + route] = [checkerboardFlags.childrenToRemove[ind]]
-                    console.log('keepJumps forEach Split 1!', keepJumps['chip' + num + route][ind])
-                    console.log('predeterChildren forEach Split 1! ', predeterChildren['chip' + num + route])
-
-                })
-
-                for (ind = 0; ind <= keepJumps['chip' + num + ' A'].length - 1; ind++) {
-
-                    checkChainJump(undefined, keepJumps['chip' + num + ' A'][ind], num, ' A')
                     tempJumpArr.forEach(function (element, ind) {
-                        if (numIsTrue(element)) {
-                            keepJumps['chip' + num + ' A'].push(element)
-                            console.log('keepJumps forEach Split 2!', keepJumps['chip' + num + ' A'][ind])
-                            console.log('predeterChildren forEach Split 2! ', predeterChildren['chip' + num + ' A'])
-                        } else { console.log('numIsNotTrue: ', element, ind) }
+
+                        if (ind === 0) { var route = ' A' }
+                        if (ind === 1) { var route = ' B' }
+
+                        keepJumps['chip' + num + route] = [element]
+                        predeterChildren['chip' + num + route] = [checkerboardFlags.childrenToRemove[ind]]
+                        console.log('keepJumps forEach Split 1!', keepJumps['chip' + num + route][ind])
+                        console.log('predeterChildren forEach Split 1! ', predeterChildren['chip' + num + route])
+
                     })
-                }
 
-                for (ind = 0; ind <= keepJumps['chip' + num + ' B'].length - 1; ind++) {
+                    for (ind = 0; ind <= keepJumps['chip' + num + ' A'].length - 1; ind++) {
 
-                    checkChainJump(undefined, keepJumps['chip' + num + ' B'][ind], num, ' B')
-                    tempJumpArr.forEach(function (element, ind) {
-                        if (numIsTrue(element)) {
-                            keepJumps['chip' + num + ' B'].push(element)
-                            console.log('keepJumps forEach Split 2!', keepJumps['chip' + num + ' B'][ind])
-                            console.log('predeterChildren forEach Split 2! ', predeterChildren['chip' + num + ' B'])
-                        } else { console.log('numIsNotTrue: ', element, ind) }
-                    })
-                }
-
-            } else {
-
-                tempJumpArr.forEach(function (element, ind) {
-                    if (numIsTrue(element)) {
-                        keepJumps['chip' + num] = [element]
-                        predeterChildren['chip' + num] = [checkerboardFlags.childrenToRemove[0]]
-                        console.log('keepJumps forEach Func 1!', keepJumps['chip' + num][ind])
-                        console.log('predeterChildren forEach Func 1! ', predeterChildren['chip' + num])
-                    }
-                })
-
-                for (ind = 0; ind <= keepJumps['chip' + num].length - 1; ind++) {
-                    checkChainJump(undefined, keepJumps['chip' + num][ind], num)
-                    if (twoNumIsTrue(tempJumpArr)) {
-                        var firstLinearJump = keepJumps['chip' + num][0]
-                        var secondLinearJump = keepJumps['chip' + num][1]
-                        var firstJumpA = tempJumpArr.shift()
-                        var secondJumpB = tempJumpArr.shift()
-                        var secondChildB = predeterChildren['chip' + num].pop()
-                        var firstChildA = predeterChildren['chip' + num].pop()
-
-                        keepJumps['chip' + num + ' A'] = [firstLinearJump]
-                        keepJumps['chip' + num + ' B'] = [firstLinearJump]
-                        predeterChildren['chip' + num + ' A'] = [checkerboardFlags.childrenToRemove[0]]
-                        predeterChildren['chip' + num + ' B'] = [checkerboardFlags.childrenToRemove[0]]
-
-                        if (secondLinearJump) {
-                            keepJumps['chip' + num + ' A'].push(secondLinearJump)
-                            keepJumps['chip' + num + ' B'].push(secondLinearJump)
-                            var secondLinearChild = predeterChildren['chip' + num].pop()
-                            predeterChildren['chip' + num + ' A'].push(secondLinearChild)
-                            predeterChildren['chip' + num + ' B'].push(secondLinearChild)
-                            predeterChildren['chip' + num].push(secondLinearChild);
-                        }
-
-                        keepJumps['chip' + num + ' A'].push(firstJumpA)
-                        keepJumps['chip' + num + ' B'].push(secondJumpB)
-                        predeterChildren['chip' + num + ' A'].push(firstChildA)
-                        predeterChildren['chip' + num + ' B'].push(secondChildB)
-                        if (keepJumps['chip' + num].length < keepJumps['chip' + num + ' A'].length) {
-                            checkChainJump(undefined, keepJumps['chip' + num + ' A'][ind + 1], num)
-                            if (twoNumIsTrue(tempJumpArr)) {
-                                tempJumpArr.forEach(function (ele, ind){
-                                    if (ind === 0) {
-                                        var newRoute = ' C'
-                                    }
-                                    else if (ind === 1) {
-                                        var newRoute = ' D'
-                                    }
-
-                                    keepJumps['chip' + num + newRoute] = keepJumps['chip' + num + ' A'].concat([ele])
-                                    predeterChildren['chip' + num + newRoute] = [checkerboardFlags.childrenToRemove[ind]]
-                                })
-                            } else if (numIsTrue(tempJumpArr)) {
-                                // linear jump
-                            }
-                        }
-                        if (keepJumps['chip' + num].length < keepJumps['chip' + num + ' B'].length) {
-                            checkChainJump(undefined, keepJumps['chip' + num + ' B'][ind + 1], num)
-                            if (twoNumIsTrue(tempJumpArr)) {
-                                tempJumpArr.forEach(function (ele, ind){
-                                    
-
-                                    if (ind === 0) {
-                                        var newRoute = ' E'
-                                        var secondChild = predeterChildren['chip' + num].pop()
-                                        var firstChild = predeterChildren['chip' + num].pop()
-                                        predeterChildren['chip' + num].push(secondChild)
-
-                                        predeterChildren['chip' + num + newRoute] = predeterChildren['chip' + num + ' B'].concat([firstChild])
-                                        /* checkerboardFlags.predeterminedChildrenToRemove['chip' + num + newRoute].push(firstChild) */
-                                    }
-                                    else if (ind === 1) {
-                                        var newRoute = ' F'
-                                        var secondChild = predeterChildren['chip' + num].pop()
-                                        predeterChildren['chip' + num + newRoute] = predeterChildren['chip' + num + ' B'].concat([secondChild])
-                                        /* predeterChildren['chip' + num + newRoute].push(secondChild) */
-                                    }
-
-                                    keepJumps['chip' + num + newRoute] = keepJumps['chip' + num + ' B'].concat([ele])
-
-                                })
-                            } else if (numIsTrue(tempJumpArr)) {
-                                // linear jump
-                            }
-                        }
-                        /* delete keepJumps['chip' + num] */
-                        break;
-                    } else {
+                        // Split > Split A
+                        checkChainJump(undefined, keepJumps['chip' + num + ' A'][ind], num, ' A')
                         tempJumpArr.forEach(function (element, ind) {
                             if (numIsTrue(element)) {
-                                keepJumps['chip' + num].push(element)
-                                console.log('keepJumps forEach Func 2!', keepJumps['chip' + num][ind])
-                                console.log('predeterChildren forEach Func 2! ', predeterChildren['chip' + num])
+                                keepJumps['chip' + num + ' A'].push(element)
+                                console.log('keepJumps forEach Split 2!', keepJumps['chip' + num + ' A'][ind])
+                                console.log('predeterChildren forEach Split 2! ', predeterChildren['chip' + num + ' A'])
                             } else { console.log('numIsNotTrue: ', element, ind) }
                         })
                     }
-                }
-    
-            }
 
-            
+                    for (ind = 0; ind <= keepJumps['chip' + num + ' B'].length - 1; ind++) {
 
-
-            
-            /* if (keepJumps['chip' + num + 'ind' + ind]) {
-                checkChainJump(undefined, keepJumps['chip' + num][0])
-                tempJumpArr.forEach(function (element, ind) {
-                    if (numIsTrue(element)) {
-                        keepJumps['chip' + num].push(element)
-                        console.log('keepJumps forEach Func 2!', keepJumps['chip' + num])
+                        // Split > Split B
+                        checkChainJump(undefined, keepJumps['chip' + num + ' B'][ind], num, ' B')
+                        tempJumpArr.forEach(function (element, ind) {
+                            if (numIsTrue(element)) {
+                                keepJumps['chip' + num + ' B'].push(element)
+                                console.log('keepJumps forEach Split 2!', keepJumps['chip' + num + ' B'][ind])
+                                console.log('predeterChildren forEach Split 2! ', predeterChildren['chip' + num + ' B'])
+                            } else { console.log('numIsNotTrue: ', element, ind) }
+                        })
                     }
-                })
-            } */
 
-            checkerboardFlags.predeterminedChainJumps = false;
-            console.log('keepJump results: ', checkerboardFlags.keepJumps)
+                } else {
+                    // Linear Jump
+                    tempJumpArr.forEach(function (element, ind) {
+                        if (numIsTrue(element)) {
+                            keepJumps['chip' + num] = [element]
+                            predeterChildren['chip' + num] = [checkerboardFlags.childrenToRemove[0]]
+                            console.log('keepJumps forEach Func 1!', keepJumps['chip' + num][ind])
+                            console.log('predeterChildren forEach Func 1! ', predeterChildren['chip' + num])
+                        }
+                    })
+
+                    // Linear Jump -> Split (A, B)
+                    for (ind = 0; ind <= keepJumps['chip' + num].length - 1; ind++) {
+                        checkChainJump(undefined, keepJumps['chip' + num][ind], num)
+                        if (twoNumIsTrue(tempJumpArr)) {
+                            var firstLinearJump = keepJumps['chip' + num][0]
+                            var secondLinearJump = keepJumps['chip' + num][1]
+                            var firstJumpA = tempJumpArr.shift()
+                            var secondJumpB = tempJumpArr.shift()
+                            var secondChildB = predeterChildren['chip' + num].pop()
+                            var firstChildA = predeterChildren['chip' + num].pop()
+
+                            keepJumps['chip' + num + ' A'] = [firstLinearJump]
+                            keepJumps['chip' + num + ' B'] = [firstLinearJump]
+                            predeterChildren['chip' + num + ' A'] = [checkerboardFlags.childrenToRemove[0]]
+                            predeterChildren['chip' + num + ' B'] = [checkerboardFlags.childrenToRemove[0]]
+
+                            // Linear Jump -> Linear Jump 
+                            if (secondLinearJump) {
+                                keepJumps['chip' + num + ' A'].push(secondLinearJump)
+                                keepJumps['chip' + num + ' B'].push(secondLinearJump)
+                                var secondLinearChild = predeterChildren['chip' + num].pop()
+                                predeterChildren['chip' + num + ' A'].push(secondLinearChild)
+                                predeterChildren['chip' + num + ' B'].push(secondLinearChild)
+                                predeterChildren['chip' + num].push(secondLinearChild);
+                            }
+
+                            keepJumps['chip' + num + ' A'].push(firstJumpA)
+                            keepJumps['chip' + num + ' B'].push(secondJumpB)
+                            predeterChildren['chip' + num + ' A'].push(firstChildA)
+                            predeterChildren['chip' + num + ' B'].push(secondChildB)
+
+                            // Linear Jump -> Route A -> Split (C, D)
+                            if (keepJumps['chip' + num].length < keepJumps['chip' + num + ' A'].length) {
+                                checkChainJump(undefined, keepJumps['chip' + num + ' A'][ind + 1], num)
+                                if (twoNumIsTrue(tempJumpArr)) {
+                                    tempJumpArr.forEach(function (ele, ind) {
+                                        if (ind === 0) {
+                                            var newRoute = ' C'
+                                        }
+                                        else if (ind === 1) {
+                                            var newRoute = ' D'
+                                        }
+
+                                        keepJumps['chip' + num + newRoute] = keepJumps['chip' + num + ' A'].concat([ele])
+                                        predeterChildren['chip' + num + newRoute] = [checkerboardFlags.childrenToRemove[ind]]
+                                    })
+                                } else if (numIsTrue(tempJumpArr)) {
+                                    // linear jump
+                                }
+                            }
+                            // Linear Jump -> Route B -> Split (E, F)
+                            if (keepJumps['chip' + num].length < keepJumps['chip' + num + ' B'].length) {
+                                checkChainJump(undefined, keepJumps['chip' + num + ' B'][ind + 1], num)
+                                if (twoNumIsTrue(tempJumpArr)) {
+                                    tempJumpArr.forEach(function (ele, ind) {
 
 
+                                        if (ind === 0) {
+                                            var newRoute = ' E'
+                                            var secondChild = predeterChildren['chip' + num].pop()
+                                            var firstChild = predeterChildren['chip' + num].pop()
+                                            predeterChildren['chip' + num].push(secondChild)
+
+                                            predeterChildren['chip' + num + newRoute] = predeterChildren['chip' + num + ' B'].concat([firstChild])
+                                            /* checkerboardFlags.predeterminedChildrenToRemove['chip' + num + newRoute].push(firstChild) */
+                                        }
+                                        else if (ind === 1) {
+                                            var newRoute = ' F'
+                                            var secondChild = predeterChildren['chip' + num].pop()
+                                            predeterChildren['chip' + num + newRoute] = predeterChildren['chip' + num + ' B'].concat([secondChild])
+                                            /* predeterChildren['chip' + num + newRoute].push(secondChild) */
+                                        }
+
+                                        keepJumps['chip' + num + newRoute] = keepJumps['chip' + num + ' B'].concat([ele])
+
+                                    })
+                                } else if (numIsTrue(tempJumpArr)) {
+                                    // linear jump
+                                }
+                            }
+                            /* delete keepJumps['chip' + num] */
+                            break;
+                        } else {
+
+                            // Linear Jump -> Route A -> Linear | Linear -> Route B -> Linear | Linear -> Linear -> Linear
+                            tempJumpArr.forEach(function (element, ind) {
+                                if (numIsTrue(element)) {
+                                    keepJumps['chip' + num].push(element)
+                                    console.log('keepJumps forEach Func 2!', keepJumps['chip' + num][ind])
+                                    console.log('predeterChildren forEach Func 2! ', predeterChildren['chip' + num])
+                                } else { console.log('numIsNotTrue: ', element, ind) }
+                            })
+                        }
+                    }
+
+                }
+
+                checkerboardFlags.predeterminedChainJumps = false;
+                console.log('keepJump results: ', checkerboardFlags.keepJumps)
+
+              // If kinged, please continue
+            } else {
+
+                predeterKingChainJumps(undefined, undefined, num)
+
+                function predeterKingChainJumps(funcHasBeenRunning, checkJump, num, route) {
+                    
+                    
+                    if (!funcHasBeenRunning) keepJumps['chip' + num] = [], predeterChildren['chip' + num] = [], keepKingChildren['chip' + num] = []
+                    if (funcHasBeenRunning) {
+
+                        tempJumpArr = checkerboardFlags.tempJumpArr
+                        predeterChildren['chip' + num].length = 0;
+                        checkChainJump(undefined, checkJump, num)
+
+                        if (route === 'split') {
+                            predeterChildren['chip' + num] = predeterChildren['chip' + num].filter(function (ele, ind) {
+                                return ele !== keepKingChildren['chip' + num + ' A'][0]
+                            })
+
+                            predeterChildren['chip' + num] = predeterChildren['chip' + num].filter(function (ele, ind) {
+                                return ele !== keepKingChildren['chip' + num + ' B'][0]
+                            })
+
+                            tempJumpArr = tempJumpArr.filter(function (ele, ind) {
+                                return ele !== keepJumps['chip' + num + ' A'][0]
+                            })
+
+                            tempJumpArr = tempJumpArr.filter(function (ele, ind) {
+                                return ele !== keepJumps['chip' + num + ' B'][0]
+                            })
+                        }
+                        else if (route === 'linear') {
+                            tempJumpArr = tempJumpArr.filter(function (ele, ind) {
+                                return ele !== keepJumps['chip' + num][0]
+                            })
+
+                            predeterChildren['chip' + num] = predeterChildren['chip' + num].filter(function (ele, ind) {
+                                return ele !== keepKingChildren['chip' + num][keepKingChildren['chip' + num].length - 1]
+                            })
+                        }
+                    }
+
+                    // Before we begin... return if nothing is new, so it doesn't loop.
+                    if (funcHasBeenRunning) if (predeterChildren['chip' + num].length === 0) return ;
+
+                    // Quad
+                    if (fourNumIsTrue(filterJumpArr(tempJumpArr))) {
+                        var checkJump
+                        predeterKingChainJumps(true, checkJump, num)
+                    }
+
+                    // Tri
+                    else if (threeNumIsTrue(filterJumpArr(tempJumpArr))) {
+                        var checkJump
+                        predeterKingChainJumps(true, checkJump, num)
+                    }
+
+                    // Split
+                    else if (twoNumIsTrue(filterJumpArr(tempJumpArr))) {
+                        var isSplitTrue = 'split'
+                        
+                        /* predeterChildren['chip' + num] = predeterChildren['chip' + num].filter(function(ele, ind){
+                            return predeterChildren['chip' + num][ind].includes(predeterChildren['chip' + num + ' A'][0] || predeterChildren['chip' + num + ' B'][0])
+                        }) */
+                    
+                        keepJumps['chip' + num + ' A'] = [tempJumpArr.pop()]
+                        keepJumps['chip' + num + ' B'] = [tempJumpArr.pop()]
+                        keepKingChildren['chip' + num + ' A'] = [predeterChildren['chip' + num].pop()]
+                        keepKingChildren['chip' + num + ' B'] = [predeterChildren['chip' + num].pop()]
+                        var checkJump = keepJumps['chip' + num + ' A'][keepJumps['chip' + num + ' A'].length - 1]
+                        var checkJump2 = keepJumps['chip' + num + ' B'][keepJumps['chip' + num + ' B'].length - 1]
+                        predeterKingChainJumps(true, checkJump, num, isSplitTrue)
+                        predeterKingChainJumps(true, checkJump2, num, isSplitTrue)
+                    }
+
+                    // Linear
+                    else if (numIsTrue(tempJumpArr[0]) && tempJumpArr.length === 1) {
+                        var isLinearTrue = 'linear'
+                        keepJumps['chip' + num].push(tempJumpArr[0])
+
+                        if (keepKingChildren['chip' + num][0] === checkerboardFlags.childrenToRemove[0]){
+                            keepKingChildren['chip' + num].push(predeterChildren['chip' + num][0])
+                        }
+                        else keepKingChildren['chip' + num] = [checkerboardFlags.childrenToRemove[0]]
+                        
+                        var checkJump = keepJumps['chip' + num][keepJumps['chip' + num].length - 1]
+                        predeterKingChainJumps(true, checkJump, num, isLinearTrue)
+                    }
+
+                    
+
+                }
+                
+            }
         }
     }
     checkerboardFlags.aiTurn = false;
@@ -846,6 +967,8 @@ function aiPick(num, cellid, selector, route) {
     var topAndBottomCells = [0, 1, 2, 29, 30, 31]
     console.log (checkAllJumps, checkChainJumps);
     
+   /*  if (selector === undefined) predeter = false; */
+
     // for console log (kek)
     if (checkerboardFlags.colorAiFlag === 'red') var matchRedSelector = num + 20
 
@@ -884,7 +1007,7 @@ function aiPick(num, cellid, selector, route) {
     }
     
 
-    console.log('What color is AI? ', checkerboardFlags.colorAiFlag, 'What piece is AI trying to move? ', matchRedSelector)
+    console.log('What color is AI? ', checkerboardFlags.colorAiFlag, 'What piece is AI trying to move? ', matchRedSelector, selector)
     console.log ('(AI PICK) NUMBER PICKED = ', 'num: ', num, 'or', 'cellid: ', cellid)
     
     if (checkerboardFlags.colorAiFlag == 'red') {
