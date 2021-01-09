@@ -24,6 +24,7 @@ var checkerboardFlags = {
     predeterminedChildrenToRemove: [],
     childrenToKeep: [],
     playerChildrenToKeep: [],
+    kingLocations: [],
     playerChainJump: null,
     playerPreviousChainJump: null,
     checkAllJumps: false,
@@ -150,22 +151,24 @@ function updateGamestateValue(node, color) {
     var slicedNode = +node.id.slice(4)
     var redKingSpots = [0, 1, 2, 3]
     var blackKingSpots = [28, 29, 30, 31]
-
+    
     if (color == 'red') {
         checkerboardFlags.slots[slicedNode] = 'red'
         console.log('Changed cell', slicedNode, ' to ', checkerboardFlags.slots[slicedNode]);
         if (redKingSpots.includes(slicedNode) && !node.firstChild.firstChild) {
             var kingDiv = document.createElement('Div');
             node.firstChild.appendChild(kingDiv);
+
             kingDiv.style.background = 'linear-gradient(45deg, rgb(235, 0, 0), rgb(90, 0, 0))';
             kingDiv.style.width = '8rem';
             kingDiv.style.height = '8rem';
             kingDiv.style.borderRadius = '50%';
             kingDiv.style.position = 'relative';
             kingDiv.style.border = '0.3rem solid silver';
-            kingDiv.style.bottom = '0.9rem'
+            kingDiv.style.bottom = '0.9rem';
             kingDiv.style.right = '0.3rem';
             kingDiv.style.boxShadow = '0.6rem 0.6rem 0.6rem rgb(0, 0, 0)';
+
         }
     } else if (color == 'black') {
         checkerboardFlags.slots[slicedNode] = 'black'
@@ -179,9 +182,10 @@ function updateGamestateValue(node, color) {
             kingDiv.style.borderRadius = '50%';
             kingDiv.style.position = 'relative';
             kingDiv.style.border = '0.3rem solid silver';
-            kingDiv.style.bottom = '0.9rem'
+            kingDiv.style.bottom = '0.9rem';
             kingDiv.style.right = '0.3rem';
             kingDiv.style.boxShadow = '0.6rem 0.6rem 0.6rem rgb(0, 0, 0)';
+
         }
     } else {
         checkerboardFlags.slots[slicedNode] = false;
@@ -1537,17 +1541,45 @@ function removeChildren(cellNum) {
     td.removeChild(td.firstChild)
 }
 
+// Converts Kinged Divs to Cells for saving and loading to work (Divs are random when loaded)
+function whatCellsHaveKings(){
+
+    checkerboardFlags.kingLocations.length = 0;
+
+    for (i=0;i < checkerboardFlags.slots.length;i++){
+
+        if(checkerboardFlags.slots[i] === 'black' || checkerboardFlags.slots[i] === 'red'){
+            if(allContainers[i].firstChild.firstChild){
+                console.log('king on: ', i)
+                checkerboardFlags.kingLocations.push(+allContainers[i].id.slice(4))
+            }
+            console.log('no king on: ', i)
+        } else console.log('no king on: ', i)
+    }
+
+    checkerboardFlags.kingLocations
+        .sort(function(a, b){
+        return a - b
+    })
+    
+}
+
 // localStorage save system
 var saveButton = document.getElementById("storageSaveButton");
 saveButton.addEventListener("click", function(){
+    whatCellsHaveKings()
+
     var strAiChildren = JSON.stringify(checkerboardFlags.childrenToKeep)
     var strPlayerChildren = JSON.stringify(checkerboardFlags.playerChildrenToKeep)
     var gameState = JSON.stringify(checkerboardFlags.slots)
+    var kingLocations = JSON.stringify(checkerboardFlags.kingLocations)
     
+
     localStorage.setItem("playerColorFlag", checkerboardFlags.colorFlag)
     localStorage.setItem("gameState", gameState)
-    localStorage.setItem("aiChips", strAiChildren);
+    localStorage.setItem("aiChips", strAiChildren)
     localStorage.setItem("playerChips", strPlayerChildren)
+    localStorage.setItem("kingLocations", kingLocations)
 })
 
 // localStorage load system
@@ -1557,7 +1589,9 @@ loadButton.addEventListener("click", function(){
     var strAiChips = localStorage.getItem("aiChips")
     var strPlayerChips = localStorage.getItem("playerChips")
     var strColorFlag = localStorage.getItem("playerColorFlag")
+    var strKingLocations = localStorage.getItem("kingLocations")
 
+    var parseKingLocations = JSON.parse(strKingLocations)
     var parseGameState = JSON.parse(strGameState)
     var parseAiChips = JSON.parse(strAiChips)
     var parsePlayerChips = JSON.parse(strPlayerChips)
@@ -1566,12 +1600,13 @@ loadButton.addEventListener("click", function(){
     console.log('Deleted Ai Chips Loaded: ', parseAiChips);
     console.log('Deleted Player Chips Loaded: ', parsePlayerChips);
     console.log('Player is color: ', strColorFlag)
+    console.log('These chips are kinged: ', parseKingLocations);
 
-    transformLoad(parseGameState, parseAiChips, parsePlayerChips, strColorFlag)
+    transformLoad(parseGameState, parseAiChips, parsePlayerChips, strColorFlag, parseKingLocations);
 })
 
 // Function for transforming board after loading a save
-function transformLoad(gamestate, aichips, playerchips, colorflag) {
+function transformLoad(gamestate, aichips, playerchips, colorflag, kingLocations) {
     var blackChips = [];
     var redChips = [];
     var tempStorage = {
@@ -1782,6 +1817,7 @@ function transformLoad(gamestate, aichips, playerchips, colorflag) {
     checkerboardFlags.colorFlag = colorflag
     checkerboardFlags.childrenToKeep = aichips
     checkerboardFlags.playerChildrenToKeep = playerchips
+    checkerboardFlags.kingLocations = kingLocations
     
     if (colorflag === 'red') var colorAiFlag = 'black'
     else colorAiFlag = 'red'
@@ -1789,6 +1825,35 @@ function transformLoad(gamestate, aichips, playerchips, colorflag) {
     checkerboardFlags.colorAiFlag = colorAiFlag
 
     console.log('Load Succesful, you are', colorflag);
+
+
+    // Applies king status to chips on kingLocations
+    for (i = 0; i < checkerboardFlags.kingLocations.length; i++) {
+        var kingChip = document.createElement('Div');
+        allContainers[checkerboardFlags.kingLocations[i]].firstChild.appendChild(kingChip)
+
+        if (checkerboardFlags.slots[checkerboardFlags.kingLocations[i]] === 'red') {
+            kingChip.style.background = 'linear-gradient(45deg, rgb(235, 0, 0), rgb(90, 0, 0))';
+            kingChip.style.width = '8rem';
+            kingChip.style.height = '8rem';
+            kingChip.style.borderRadius = '50%';
+            kingChip.style.position = 'relative';
+            kingChip.style.border = '0.3rem solid silver';
+            kingChip.style.bottom = '0.9rem';
+            kingChip.style.right = '0.3rem';
+            kingChip.style.boxShadow = '0.6rem 0.6rem 0.6rem rgb(0, 0, 0)';
+        } else {
+            kingChip.style.background = 'linear-gradient(45deg, rgb(20, 20, 20), rgb(90, 90, 90))';
+            kingChip.style.width = '8rem';
+            kingChip.style.height = '8rem';
+            kingChip.style.borderRadius = '50%';
+            kingChip.style.position = 'relative';
+            kingChip.style.border = '0.3rem solid silver';
+            kingChip.style.bottom = '0.9rem';
+            kingChip.style.right = '0.3rem';
+            kingChip.style.boxShadow = '0.6rem 0.6rem 0.6rem rgb(0, 0, 0)';
+        }
+    }
 }
 
 // Function for removing child objects (OLD LINEAR JUMP SYSTEM)
