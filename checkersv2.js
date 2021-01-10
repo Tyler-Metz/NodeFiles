@@ -568,30 +568,49 @@ function checkAllJumps() {
         return slicedSelector
     }
 
+    function getLongestChild(obj) {
+        for (var key in obj) {
+            var sortArray = obj[key]
+            if (firstArr) {
+                if (firstArr.length < sortArray.length) {
+                    firstArr = sortArray
+                    console.log('changing arrays')
+                } else {
+                    console.log('doing nothing since firstArr is longer')
+                }
+            } else {
+                var firstArr = obj[key]
+            }
+            console.log(firstArr);
+        }
+
+        return firstArr
+    }
+
     function getLongestArray(selectorOrChildren) {
         for (i = 0; i <= Object.keys(keepJumps).length - 1; i++) {
             var length = Object.keys(keepJumps).length 
             var getProps = Object.keys(keepJumps)[i]
-            var getProps2 = Object.keys(predeterChildren)[i]
+            /* var getProps2 = Object.keys(predeterChildren)[i] */
             var compareArrayLength = keepJumps[getProps].length
     
             if (getArray) {
                 if (getArray.length < compareArrayLength) {
                     var getArray = keepJumps[getProps]
-                    var getChildren = predeterChildren[getProps2]
+                    /* var getChildren = predeterChildren[getProps2] */
                     var selector = i
                     
                 } else { console.log ('getLongestArray: Original array is still longer')} // 3 times results in error PLEASE FIX
             }
             else { 
                 var getArray = keepJumps[getProps]
-                var getChildren = predeterChildren[getProps2]
+                /* var getChildren = predeterChildren[getProps2] */
                 var selector = i
              }
     
         }
         if (selectorOrChildren === 'selector' && i <= length) return getSelector(selector);
-        if (selectorOrChildren === 'children' && i <= length) return getChildren
+        /* if (selectorOrChildren === 'children' && i <= length) return getChildren */
         else if (i <= length) return getArray;
     }
 
@@ -621,21 +640,47 @@ function checkAllJumps() {
 
             //Re-sorting data if kings were involved (predeterChildren get sent through in the next function, not keepKingChildren)
             if (Object.keys(keepKingChildren).length > 1 && checkJumpProps(jumpProps)){
-                var child = Object.keys(keepKingChildren)[0]
-                var childA = Object.keys(keepKingChildren)[1]
+                /* var child = Object.keys(keepKingChildren)[0]
+                var childA = Object.keys(keepKingChildren)[1] 
                 var childB = Object.keys(keepKingChildren)[2]
                 var jump = Object.keys(keepJumps)[0]
                 var jumpA = Object.keys(keepJumps)[1]
-                var jumpB = Object.keys(keepJumps)[2]
+                var jumpB = Object.keys(keepJumps)[2] */
+
+                for (var prop in keepJumps){
+                    if (keepJumps[prop + ' A']){
+                        keepJumps[prop + ' A'] = keepJumps[prop].concat(keepJumps[prop + ' A'])
+                        keepJumps[prop + ' B'] = keepJumps[prop].concat(keepJumps[prop + ' B'])
+                        delete keepJumps[prop]
+                    }
+                }
                 
-                predeterChildren[childA] = keepKingChildren[child].concat(keepKingChildren[childA])
+                for (var prop in keepKingChildren){
+                    if (keepKingChildren[prop + ' A']){
+                        keepKingChildren[prop + ' A'] = keepKingChildren[prop].concat(keepKingChildren[prop + ' A'])
+                        keepKingChildren[prop + ' B'] = keepKingChildren[prop].concat(keepKingChildren[prop + ' B'])
+                        delete keepKingChildren[prop]
+                    }
+                }
+                
+                /* predeterChildren[childA] = keepKingChildren[child].concat(keepKingChildren[childA])
                 predeterChildren[childB] = keepKingChildren[child].concat(keepKingChildren[childB])
                 keepJumps[jumpA] = keepJumps[jump].concat(keepJumps[jumpA])
-                keepJumps[jumpB] = keepJumps[jump].concat(keepJumps[jumpB])
+                keepJumps[jumpB] = keepJumps[jump].concat(keepJumps[jumpB]) */
 
-                delete keepKingChildren[child]
-                delete keepKingChildren[childA]
-                delete keepKingChildren[childB]
+                for (var prop in predeterChildren){
+                    if (predeterChildren[prop].length === 0){
+                        delete predeterChildren[prop]
+                    }
+                }
+
+                for (var prop in keepKingChildren){
+                    if (keepKingChildren[prop]) {
+                        predeterChildren[prop] = keepKingChildren[prop]
+                        delete keepKingChildren[prop]
+                    }
+                }
+
             } else if (Object.keys(keepKingChildren).length === 1){
                 var child = Object.keys(keepKingChildren)[0]
                 predeterChildren[child] = keepKingChildren[child]
@@ -646,22 +691,31 @@ function checkAllJumps() {
                     predeterChildren[child] = keepKingChildren[child]
                 }
 
-                for (var i in keepKingChildren){
-                    if (keepKingChildren[i]) {
-                        delete keepKingChildren[i]
+                for (var prop in keepKingChildren){
+                    if (keepKingChildren[prop]) {
+                        delete keepKingChildren[prop]
                     }
                 }
                 
             }
+            // Delete empty empty predeterChildren Arrays, so keepJumps has the same index alignment
+
+            /* for (var prop in predeterChildren){
+                if (predeterChildren[prop].length === 0){
+                    delete predeterChildren[prop]
+                }
+            } */
 
             // Get longest array from predeterminedChildrenToRemove (chips to remove) & keepJumps (jumps to execute)
             if (Object.keys(keepJumps).length !== 0){
-            var bestJumps = getLongestArray()
+
             var chipSelector = getLongestArray('selector')
-            var childrenToRemove = getLongestArray('children')
+            var bestJumps = getLongestChild(keepJumps)
+            var childrenToRemove = getLongestChild(predeterChildren)
 
             console.log('bestJumps: ', bestJumps);
             console.log('chipSelector: ', chipSelector);
+            console.log('childrenToRemove: ', childrenToRemove);
 
             if (checkerboardFlags.colorAiFlag === 'red') aiMove(allRed[chipSelector], bestJumps, childrenToRemove) // chipSelector '2 A' FIX (FIXED)
             else aiMove(allBlack[chipSelector], bestJumps, childrenToRemove)
@@ -860,6 +914,22 @@ function checkAllJumps() {
                         })
                     }
 
+                    function checkJumpKeys(obj, route){
+
+                        
+                        for (let key in obj){
+                            if (route === ' A') var searchBoolean = key.search(' A');
+                            else if (route === ' B') var searchBoolean = key.search(' B');
+
+                            if (searchBoolean === -1) searchBoolean = true;
+                            else searchBoolean = false;
+
+                            if (searchBoolean && predeterChildren['chip' + num][predeterChildren['chip' + num].length - 1]){
+                                return !keepKingChildren[key].includes(predeterChildren['chip' + num][predeterChildren['chip' + num].length - 1])
+                            } else return false
+                        }
+                    }
+
                     if (!funcHasBeenRunning) keepJumps['chip' + num] = [], predeterChildren['chip' + num] = [], keepKingChildren['chip' + num] = []
                     if (funcHasBeenRunning) {
 
@@ -935,14 +1005,39 @@ function checkAllJumps() {
 
                         // LINEAR REMOVAL CHECK
                         else if (route === 'linear') {
+                            predeterChildren['chip' + num] = predeterChildren['chip' + num].filter(function (ele, ind) {
+                                if (checkJumpProps(jumpProps)) {
+                                    if (3 <= jumpPropsLength && checkJumpA) {
+                                        return !keepKingChildren['chip' + num].includes(ele)
+                                            && !keepKingChildren['chip' + num + ' A'].includes(ele)
+
+                                    } else if (3 <= jumpPropsLength && checkJumpB) {
+                                        return !keepKingChildren['chip' + num].includes(ele)
+                                            && !keepKingChildren['chip' + num + ' B'].includes(ele)
+                                    } else {
+                                        return !keepKingChildren['chip' + num].includes(ele)
+                                            && !keepKingChildren['chip' + num + ' A'].includes(ele)
+                                            && !keepKingChildren['chip' + num + ' B'].includes(ele)
+                                    }
+                                } else {
+                                    return !keepKingChildren['chip' + num].includes(ele)
+                                }
+                            })
+
                             tempJumpArr = tempJumpArr.filter(function (ele, ind) {
                                 if (checkJumpProps(jumpProps)) {
-                                    if (jumpPropsLength === 3 && keepJumps['chip' + num + ' A'].includes(checkJump)) {
-                                        return !keepJumps['chip' + num].includes(ele)
+                                    if (3 <= jumpPropsLength && checkJumpA) {
+                                        if (checkJumpKeys(keepKingChildren, ' A')){
+                                            return !keepJumps['chip' + num + ' A'].includes(ele)
+                                        }
+                                        else return !keepJumps['chip' + num].includes(ele)
                                             && !keepJumps['chip' + num + ' A'].includes(ele)
 
-                                    } else if (jumpPropsLength === 3 && keepJumps['chip' + num + ' B'].includes(checkJump)) {
-                                        return !keepJumps['chip' + num].includes(ele)
+                                    } else if (3 <= jumpPropsLength && checkJumpB) {
+                                        if (checkJumpKeys(keepKingChildren, ' B')){
+                                            return !keepJumps['chip' + num + ' B'].includes(ele)
+                                        }
+                                        else return !keepJumps['chip' + num].includes(ele)
                                             && !keepJumps['chip' + num + ' B'].includes(ele)
                                     }
                                     else {
@@ -955,24 +1050,6 @@ function checkAllJumps() {
                                 }
                             })
 
-                            predeterChildren['chip' + num] = predeterChildren['chip' + num].filter(function (ele, ind) {
-                                if (checkJumpProps(jumpProps)) {
-                                    if (jumpPropsLength === 3 && keepJumps['chip' + num + ' A'].includes(checkJump)) {
-                                        return !keepKingChildren['chip' + num].includes(ele)
-                                            && !keepKingChildren['chip' + num + ' A'].includes(ele)
-
-                                    } else if (jumpPropsLength === 3 && keepJumps['chip' + num + ' B'].includes(checkJump)) {
-                                        return !keepKingChildren['chip' + num].includes(ele)
-                                            && !keepKingChildren['chip' + num + ' B'].includes(ele)
-                                    } else {
-                                        return !keepKingChildren['chip' + num].includes(ele)
-                                            && !keepKingChildren['chip' + num + ' A'].includes(ele)
-                                            && !keepKingChildren['chip' + num + ' B'].includes(ele)
-                                    }
-                                } else {
-                                    return !keepKingChildren['chip' + num].includes(ele)
-                                }
-                            })
                         }
                     }
 
@@ -1042,13 +1119,17 @@ function checkAllJumps() {
                         // Did you do a split already?
                         if (checkJumpProps(jumpProps)) {
 
-                            if (jumpPropsLength === 3 && keepJumps['chip' + num + ' A'].includes(checkJump) && checkJumpB === undefined) {
+                            if (3 <= jumpPropsLength && checkJumpA) {
                                 keepJumps['chip' + num + ' A'] = keepJumps['chip' + num + ' A'].concat(tempJumpArr)
                                 keepKingChildren['chip' + num + ' A'] = keepKingChildren['chip' + num + ' A'].concat(predeterChildren['chip' + num])
+                                var checkJumpA = tempJumpArr[0]
+                                checkLinearJump = undefined
                             }
-                            else if (jumpPropsLength === 3 && keepJumps['chip' + num + ' B'].includes(checkJump) && checkJumpA === undefined) {
+                            else if (3 <= jumpPropsLength && checkJumpB) {
                                 keepJumps['chip' + num + ' B'] = keepJumps['chip' + num + ' B'].concat(tempJumpArr)
                                 keepKingChildren['chip' + num + ' B'] = keepKingChildren['chip' + num + ' B'].concat(predeterChildren['chip' + num])
+                                var checkJumpB = tempJumpArr[0]
+                                checkLinearJump = undefined
                             }
                         }
                         // Else continue linear movement
@@ -1062,7 +1143,7 @@ function checkAllJumps() {
 
                             checkLinearJump = keepJumps['chip' + num][keepJumps['chip' + num].length - 1]
                         }
-                        predeterKingChainJumps(true, undefined, undefined, undefined, checkLinearJump, num, isLinearTrue)
+                        predeterKingChainJumps(true, checkJumpA, checkJumpB, undefined, checkLinearJump, num, isLinearTrue)
                     }
                 } 
             }
@@ -1347,9 +1428,9 @@ function aiPick(num, cellid, selector, route) {
         // BLACK|RED ODD CORNER  BOTTOM LEFT
         if (cornerCells.includes(slicedBlackCell, 0) && checkerboardFlags.colorFlag == 'red' || cornerCells.includes(slicedRedCell, 0) && checkerboardFlags.colorFlag == 'black') {
             console.log('ODD CORNER MODULE RUNNING...')
-            if ( !predeter && checkerboardFlags.colorFlag == 'red' && !checkerboardFlags.slots[24]) { /* tempArr.push(24); */ return aiMove(allBlack[num], num) } // IF KINGED, this needs to change. - Just enable it.
+            if ( !predeter && checkerboardFlags.colorFlag == 'red' && !checkerboardFlags.slots[24]) { if (allBlack[num].firstChild) {tempArr.push(24)}; return aiMove(allBlack[num], num) } // IF KINGED, this needs to change. - Just enable it.
             else if ( !predeter && checkerboardFlags.colorFlag == 'black' && !checkerboardFlags.slots[24]) { tempArr.push(24); return aiMove(allRed[num], num) }
-            else if (!checkerboardFlags.keepJumps['chip' + selector] && checkerboardFlags.colorFlag == 'red' && checkerboardFlags.slots[24] == 'red') {/* tempJumpArr.push(jumpChip(-4, slicedBlackCell)) */ if (!predeter) return aiMove(allBlack[num], num) } // IF KINGED, this needs to change. - Just enable it.
+            else if (!checkerboardFlags.keepJumps['chip' + selector] && checkerboardFlags.colorFlag == 'red' && checkerboardFlags.slots[24] == 'red') { if (allBlack[num].firstChild) {tempJumpArr.push(jumpChip(-4, slicedBlackCell))} if (!predeter) return aiMove(allBlack[num], num) } // IF KINGED, this needs to change. - Just enable it.
             else if (!checkerboardFlags.keepJumps['chip' + selector] && checkerboardFlags.colorFlag == 'black' && checkerboardFlags.slots[24] == 'black') { tempJumpArr.push(jumpChip(-4, slicedRedCell)); if (!predeter) return aiMove(allRed[num], num) }
             else if (checkerboardFlags.checkAllJumps && !predeter) {console.log('Reseting AI, corner is full.'); aiPick();}
             else {console.log('Returning False, corner is full.'); return false;}
@@ -1434,9 +1515,9 @@ function aiPick(num, cellid, selector, route) {
         if (cornerCells.includes(slicedBlackCell, 1) && checkerboardFlags.colorFlag == 'red' || cornerCells.includes(slicedRedCell, 1) && checkerboardFlags.colorFlag == 'black') {
             console.log('EVEN CORNER MODULE RUNNING...')
             if ( !predeter && checkerboardFlags.colorFlag == 'red' && !checkerboardFlags.slots[7]) { tempArr.push(7); return aiMove(allBlack[num], num) }
-            else if ( !predeter && checkerboardFlags.colorFlag == 'black' && !checkerboardFlags.slots[7]) { /* tempArr.push(7); */ return aiMove(allRed[num], num) } // IF KINGED, this needs to change. - Just enable it.
+            else if ( !predeter && checkerboardFlags.colorFlag == 'black' && !checkerboardFlags.slots[7]) { if(allRed[num].firstChild){tempArr.push(7)}; return aiMove(allRed[num], num) } // IF KINGED, this needs to change. - Just enable it.
             else if (!checkerboardFlags.keepJumps['chip' + selector] && checkerboardFlags.colorFlag == 'red' && checkerboardFlags.slots[7] == 'red') { tempJumpArr.push(jumpChip(4, slicedBlackCell)); if (!predeter) return aiMove(allBlack[num], num);}
-            else if (!checkerboardFlags.keepJumps['chip' + selector] && checkerboardFlags.colorFlag == 'black' && checkerboardFlags.slots[7] == 'black') {/* tempJumpArr.push(jumpChip(4, slicedRedCell)) */; if (!predeter) return aiMove(allRed[num], num);} // IF KINGED, this needs to change. - Just enable it.
+            else if (!checkerboardFlags.keepJumps['chip' + selector] && checkerboardFlags.colorFlag == 'black' && checkerboardFlags.slots[7] == 'black') {if(allRed[num].firstChild){tempJumpArr.push(jumpChip(4, slicedRedCell))}; if (!predeter) return aiMove(allRed[num], num);} // IF KINGED, this needs to change. - Just enable it.
             else if (checkerboardFlags.checkAllJumps && !predeter) {console.log('Reseting AI, corner is full.'); aiPick();}
             else {console.log('Returning False, corner is full.'); return false;}
 
